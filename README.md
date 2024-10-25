@@ -115,3 +115,64 @@ Here is a suggest algorithm divided into two cases that should cover all cases:
  7. Check if any binomial name with the genus name is already matching in the focal list (e.g. Does `Homo sapiens` already exist in the focal list). If yes, go to 8. Else go to 9.
  8. The binomial name might be a synonym, return it as ambiguous (needs a human to check - e.g. the match list only contains `Homo sapiens` and the focal list contains `Homo sapiens` AND `Homo economicus` are they both synonyms?).
  9. Attribute the species name to focal binomial name to the first match binomial name and flag it to the user (e.g "We changed `Homo troglodytes` by `Homo sapiens` because we know it's at least in that genus.")
+
+
+
+
+
+# General functions:
+
+-splitting binomials TODO: Joey
+-counting characters TODO: Elle
+-counting differences in characters TODO: Kat
+-counting tree distances TODO: Thomas
+-counting number of species per genus: TODO Caleb
+-ranking/sorting mismatches: TODO Joey
+-detecing the number of species in the same genus that are not matching (de matching function): TODO ROb
+
+-labeling the type of missmatch
+-[black box] giving a confidence score
+
+# Tasks
+
+Step
+ - Extract the names from the tree (make it the FOCAL list)
+Step 
+ - Match the names (using match()) remove the ones we don't care
+Step
+ - Separating Genus and species name but keeping track of the pairs
+
+
+# TYPO MATCHING
+ - [ ] TODO: for Kat
+Algorithm for detecting typos:
+ 1- count number of characters in MATCH
+ 2- compare to the same n characters in FOCAL
+ 3- measure the number of different characters
+ 4- output the one with the least difference
+Algorithm for detecting different latin bullshit
+    Some kind of matching with wild card: e.g. *us becomes *ae
+
+# MONOTYPIC MATCHING
+ - [ ] TODO: for Caleb
+Algo for detecting number of species per genus.
+    Check the differences in genuses that have just one species
+    Easy match of monotypic binomials between MATCH and FOCAL, if there is no match, it's a problem with genus name.
+    And then match the species names.
+
+# GENUS OR SPECIES NAME MATCHING
+- [ ] TODO: for Thomas
+Algo for genus name change
+Algo for species name change
+
+# MATCH LEFTOVER MATCHING
+Algo for detecting a binomial in MATCH that is not in FOCAL <- species that don't exist in the tree
+Sorting the leftovers in MATCH
+
+# FOCAL LEFTOVER MATCHING
+ - [ ] TODO: for Rob
+Algo for "de matching" matches (e.g. Genus species could potentially match with Genus specias, specius)
+Sorting the leftovers in FOCAL
+
+# SORTING THE CONFIDENCE SCORES
+Passing all the names through all the algorithms and give them some confidence score
