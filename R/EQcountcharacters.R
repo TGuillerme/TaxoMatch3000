@@ -1,8 +1,10 @@
-## COUNT CHARACTERS FUNCTION
+### COUNT CHARACTERS FUNCTION
+
+# Load data
+load("Data/algo_design_data.rda")
 
 ## Function for counting the characters of each species name in a list
 count_characters <- function(data) {
-  # Check for character vector
   if(!is.character(data)) {
     stop("Data must be a character vector")
   }
@@ -11,15 +13,19 @@ count_characters <- function(data) {
   return(characters)
 }
 
-# Testing with beaks dataset (MATCH)
-library(dplyr)
-birds <- read.csv("Data/algo_design_data.rda")
-match <- algo_design_data$Species_beaks
+# Testing (focal)
+characters_beaks <- algo_design_data$Species_beaks
+count_characters(characters_beaks)
 
-count_characters(match)
+characters_traits <- algo_design_data$Species_traits
+count_characters(characters_traits)
 
-# Testing with Jetz dataset (FOCAL)
-tree <-read.csv("Data/algo_design_data.rda")
-focal <- algo_design_data$Jetz_tree$tip.label
+characters_islands <- algo_design_data$Species_islands
+count_characters(characters_islands)
 
-count_characters(focal)
+# Testing (match)
+characters_jetz <- algo_design_data$Jetz_tree$tip.label
+count_characters(characters_jetz)
+
+characters_clements <- algo_design_data$Clements_tree$tip.label
+count_characters(characters_clements)
