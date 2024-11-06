@@ -1,4 +1,6 @@
 ### Function to rank species name comparisons by number of mismatches
+# For detecting typos or small adjustments in spelling
+
 
 ## Load data
 load("algo_design_data.rda")
@@ -25,7 +27,8 @@ rank_mismatches <- function(species_list1, species_list2, max_mismatch = 2) {
     # Calculate mismatches for each species in list2
     distances <- stringdist::stringdist(species_list1[i], species_list2, method = "lv")
     
-    # Filter based on the max mismatch threshold and exclude exact matches
+    # Exclude exact matches and filter based on the max mismatch threshold (more
+    # than 2 mismatches unlikely to be simple typo)
     filtered_indices <- which(distances > 0 & distances <= max_mismatch)
     
     # Store results
@@ -47,6 +50,6 @@ rank_mismatches <- function(species_list1, species_list2, max_mismatch = 2) {
 
 
 ### Does the function work?
-ranked_mismatches <- rank_mismatches(algo_design_data$Species_beaks, algo_design_data$Jetz_tree$tip.label)
+ranked_mismatches <- rank_mismatches(algo_design_data$Species_beaks, algo_design_data$Clements_tree$tip.label)
 
 View(ranked_mismatches)
