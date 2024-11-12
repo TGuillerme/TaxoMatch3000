@@ -23,9 +23,6 @@ count_jetz <- aggregate(species_jetz ~ genus_jetz, data = jetz_df, FUN = functio
 ## functionalise 
 count_species_per_genus <- function(data) {
   # Check if the required columns exist
-  if(!all(c("Genus", "Species") %in% colnames(data))) {
-    stop("Data must contain 'Genus' and 'Species' columns")
-  }
   
   # Aggregate to count unique species per genus
   count <- aggregate(Species ~ Genus, data = data, FUN = function(x) length(unique(x)))
