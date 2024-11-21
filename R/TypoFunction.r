@@ -171,6 +171,7 @@ find_most_similar_pairs2 <- function(focal_df, tree_df, genus_column, species_co
 most_similar_pairs_df_full <- find_most_similar_pairs2(FocalMissmatches_df, TreeMissmatches_df,
                                                       "Genus", "Species", remove_duplicates = FALSE,
                                                        match_type = "combined")
+                                                       
 # It looks like a combined score of 1 or 2 is always a typo/latin change
 # 3 gets a bit more tricky but could indicate a change in genus, typo's, both or a wrong match. 
 # Could 3's where the species is a perfect match be mostly indicative of a change in genus?
