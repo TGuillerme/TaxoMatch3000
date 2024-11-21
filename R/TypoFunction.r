@@ -48,7 +48,7 @@ find_most_similar_pairs <- function(focal_df, tree_df, column_name, remove_dupli
   mutate(across(all_of(column_name), as.character))
   
   # Function to find the most similar match for a single species
-  find_similar <- function(focal_species) {
+  find_similar <- function(focal_species) { 
     # Calculate the Levenshtein distances to all species in tree_df
     distances <- stringdist::stringdist(focal_species, tree_df[[column_name]], method = "lv")
     
@@ -97,8 +97,80 @@ most_similar_pairs_df_full <- find_most_similar_pairs(FocalMissmatches_df, TreeM
 most_similar_pairs_df_species <- find_most_similar_pairs(FocalMissmatches_df, TreeMissmatches_df,
 "Species", remove_duplicates = FALSE)
 
-# This seems to work! 
-# To do:
-# Display Genus_Species from focal and tree 
-# try a more complex version where we calculate it for both genus and species, and then combine scores across both columns.
-# Also would like to be able to display the conflicting duplicate matches.
+
+
+## A version of the above function that now also takes both the species and genus as an argument, and an
+# argument 'match_type', where you can specify if you'd like to match based on the 'genus' or the 'species',
+# or whether you'd like to match based on a minimised combined score (so genus similarity + species similarity)
+
+find_most_similar_pairs2 <- function(focal_df, tree_df, genus_column, species_column, match_type = "combined", remove_duplicates = FALSE) {
+  # Ensure both dataframes have the specified columns as character vectors.
+  focal_df <- focal_df %>%
+    mutate(across(all_of(c(genus_column, species_column)), as.character))
+  tree_df <- tree_df %>%
+    mutate(across(all_of(c(genus_column, species_column)), as.character))
+  
+  # Function to find the most similar match for a single species
+  find_similar <- function(focal_genus, focal_species) {
+    # Calculate the Levenshtein distances for genus and species separately
+    genus_distances <- stringdist::stringdist(focal_genus, tree_df[[genus_column]], method = "lv")
+    species_distances <- stringdist::stringdist(focal_species, tree_df[[species_column]], method = "lv")
+    
+    # Determine the matching score based on the match_type argument
+    if (match_type == "genus") {
+      matching_distances <- genus_distances
+    } else if (match_type == "species") {
+      matching_distances <- species_distances
+    } else {
+      # Default to combined score
+      matching_distances <- genus_distances + species_distances
+    }
+    
+    # Find the index of the minimum matching distance
+    min_index <- which.min(matching_distances)
+    
+    # Get the most similar match
+    similar_match <- tree_df[min_index, , drop = FALSE]
+    
+    # Return the match as a dataframe row
+    data.frame(
+      Genus_Focal = focal_genus,
+      Species_Focal = focal_species,
+      Genus_Tree = similar_match[[genus_column]],
+      Species_Tree = similar_match[[species_column]],
+      Genus_Distance = genus_distances[min_index],
+      Species_Distance = species_distances[min_index],
+      Matching_Distance = matching_distances[min_index],
+      stringsAsFactors = FALSE
+    )
+  }
+  
+  # Apply the function to each row in focal_df
+  similar_pairs <- do.call(rbind, mapply(find_similar, focal_df[[genus_column]], focal_df[[species_column]], SIMPLIFY = FALSE))
+  
+  # Add a column to flag duplicates in the tree matches
+  similar_pairs <- similar_pairs %>%
+    group_by(Genus_Tree, Species_Tree) %>%
+    mutate(Duplicate_Tree_Match = n() > 1) %>%
+    ungroup()
+  
+  # Remove duplicates if the option is set to TRUE.
+  if (remove_duplicates) {
+    similar_pairs <- similar_pairs %>%
+      group_by(Genus_Focal, Species_Focal) %>%
+      filter(Matching_Distance == min(Matching_Distance)) %>%
+      ungroup() %>%
+      group_by(Genus_Tree, Species_Tree) %>%
+      filter(Matching_Distance == min(Matching_Distance)) %>%
+      ungroup()
+  }
+  
+  return(similar_pairs)
+}
+
+most_similar_pairs_df_full <- find_most_similar_pairs2(FocalMissmatches_df, TreeMissmatches_df,
+                                                      "Genus", "Species", remove_duplicates = FALSE,
+                                                       match_type = "combined")
+# It looks like a combined score of 1 or 2 is always a typo/latin change
+# 3 gets a bit more tricky but could indicate a change in genus, typo's, both or a wrong match. 
+# Could 3's where the species is a perfect match be mostly indicative of a change in genus?
