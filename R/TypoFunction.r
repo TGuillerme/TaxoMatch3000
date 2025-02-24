@@ -6,34 +6,13 @@ library(dplyr)
 library(tidyr)
 library(stringdist)
 
-# To test this function I've created 2 separate df's containing missmatches:
-# 1) A list of species from the dataset that don't have matches in the tree yet (focal)
-# 2) A list of species from the tree that don't have matches in the dataset yet (tree)
-# We want genus and species to already be separated but I've just put in
-# some rough code to do that below so that we can test the lv function. Can replace with general function for this later.
-
-# Create a list of species in Species_beaks that don't have a match in the tree
-FocalMissmatches_df <- data.frame(Genus_Species = algo_design_data$Species_beaks, stringsAsFactors = FALSE) %>%
-  filter(!Genus_Species %in% algo_design_data$Clements_tree$tip.label) %>%
-  separate(Genus_Species, into = c("Genus", "Species"), sep = "_", remove = FALSE)
-
-# Create a list of species from the tree that didn't have a match in Species_beaks
-TreeMissmatches_df <- data.frame(Genus_Species = algo_design_data$Clements_tree$tip.label, stringsAsFactors = FALSE) %>%
-  filter(!Genus_Species %in% algo_design_data$Species_beaks) %>%
-  separate(Genus_Species, into = c("Genus", "Species"), sep = "_", remove = FALSE)
-
-
 #### Function to find the most similar pairs based on Levenshtein distance ####
 
 # The function takes 4 arguments: 2 dataframes to compare against, the column name to compare from, 
 # and whether you want to include or remove duplicates
 
-
-# The function finds the most similar species pairs between two data frames based
-# on the Levenshtein distance. It iterates over each species in focal_df
-# and finds the most similar species in tree_df. 
-# you can specify if you'd like to match based on the 'genus' or the 'species', or whether you'd like to match
-# based on a minimised combined score (so genus similarity + species similarity)
+# The function finds the most similar species pairs between two data frames based on the Levenshtein distance. 
+# you can specify if you'd like to match based on the 'genus' or the 'species', or whether you'd like to match based on a minimised combined score (so genus similarity + species similarity)
 # since the function finds the closest match for each species in focal_df independently, it is possible for multiple
 # species in focal_df to be matched to the same species in tree_df. The function will flag where this 
 # is the case and you can optionally choose to remove duplicates, keeping only the matches with the smallest lv
@@ -113,13 +92,20 @@ find_most_similar_pairs <- function(focal_df, tree_df, genus_column, species_col
 }
 
 # Test
- most_similar_pairs_df <- find_most_similar_pairs(FocalMissmatches_df, TreeMissmatches_df,
+data_names <- split_binomials(algo_design_data$Species_beaks)
+tree_names <- split_binomials(algo_design_data$Clements_tree$tip.label)
+
+most_similar_pairs_df <- find_most_similar_pairs(data_names, tree_names,
                                                       "Genus", "Species", remove_duplicates = TRUE,
                                                       match_type = "Combined")
-
-# It looks like a combined score of 1 or 2 is always a typo/latin change
-# 3 gets a bit more tricky but could indicate a change in genus, typo's, both or a wrong match. 
-# Could 3's where the species is a perfect match be mostly indicative of a change in genus?
+View(most_similar_pairs_df)
 
 # Extract the duplicates from the result
 # duplicates <- attr(most_similar_pairs_df, "duplicates")
+
+# Extract the exact matches from the result
+# exact_matches <- most_similar_pairs_df %>% filter(Combined_Distance == 0)
+
+# Extract matches with a combined distance of 1
+# close_matches <- most_similar_pairs_df %>% filter(Combined_Distance == 1)
+
