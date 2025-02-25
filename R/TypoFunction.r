@@ -19,6 +19,9 @@
 #' most_similar_pairs_df <- find_most_similar_pairs(focal, match,
 #'   genus_column = "Genus", species_column = "Species", remove_duplicates = TRUE, match_type = "combined")
 #' 
+#' # Extract the duplicates from the result
+# duplicates <- attr(most_similar_pairs_df, "duplicates")
+
 #' # Extract exact matches where the combined distance is zero
 #' exact_matches <- most_similar_pairs_df %>% filter(Combined_Distance == 0)
 #' 
@@ -31,21 +34,31 @@
 #' @import dplyr
 #' @import tidyr
 #' @import stringdist
+#' @import progress
 #' 
 #' @export
-
 # Load libraries
 library(dplyr)
 library(tidyr)
 library(stringdist)
+library(progress)
 
 find_most_similar_pairs <- function(focal_df, tree_df, genus_column, species_column,
-                                    match_type = "combined", remove_duplicates = FALSE){
+                                    match_type = "combined", remove_duplicates = FALSE) {
+  
   # Ensure both dataframes have the specified columns as character vectors.
   focal_df <- focal_df %>%
     mutate(across(all_of(c(genus_column, species_column)), as.character))
   tree_df <- tree_df %>%
     mutate(across(all_of(c(genus_column, species_column)), as.character))
+  
+  # Initialize progress bar
+  pb <- progress_bar$new(
+    total = nrow(focal_df),   # Total number of species in focal_df
+    format = "  Processing [:bar] :percent (:current/:total) species",
+    clear = FALSE,            # Don't clear the progress bar after completion
+    width = 60
+  )
   
   # Function to find the most similar match for a single species
   find_similar <- function(focal_genus, focal_species) {
@@ -55,15 +68,18 @@ find_most_similar_pairs <- function(focal_df, tree_df, genus_column, species_col
     
     # Determine the matching score based on the match_type argument
     matching_distances <- switch(match_type,
-                                 genus = genus_distances, # if 'genus' is selected, use genus_distances
-                                 species = species_distances, # if 'species' is selected use species_distances
-                                 genus_distances + species_distances) #if 'combined' is selected, use the sum of both distances
+                                 genus = genus_distances,   # if 'genus' is selected, use genus_distances
+                                 species = species_distances,   # if 'species' is selected use species_distances
+                                 genus_distances + species_distances)   # if 'combined' is selected, use the sum of both distances
     
     # Find the index of the minimum matching distance
     min_index <- which.min(matching_distances)
     
     # Get the most similar match
     similar_match <- tree_df[min_index, , drop = FALSE]
+    
+    # Update the progress bar
+    pb$tick()
     
     # Return the match as a dataframe row
     data.frame(
@@ -87,25 +103,25 @@ find_most_similar_pairs <- function(focal_df, tree_df, genus_column, species_col
     mutate(Duplicate_Tree_Match = n() > 1) %>%
     ungroup()
   
-    # Extract duplicates before removing them
+  # Extract duplicates before removing them
   duplicates <- similar_pairs %>%
     filter(Duplicate_Tree_Match == TRUE)
-
+  
   # Remove duplicates if the option is set to TRUE.
   if (remove_duplicates) {
     similar_pairs <- similar_pairs %>%
       group_by(Genus_Match, Species_Match) %>%
       filter(if (match_type == "genus") {
-                Genus_Distance == min(Genus_Distance)
-              } else if (match_type == "species") {
-                Species_Distance == min(Species_Distance)
-              } else {
-                Combined_Distance == min(Combined_Distance)
-              }) %>%
+        Genus_Distance == min(Genus_Distance)
+      } else if (match_type == "species") {
+        Species_Distance == min(Species_Distance)
+      } else {
+        Combined_Distance == min(Combined_Distance)
+      }) %>%
       ungroup() %>%
       distinct(Genus_Match, Species_Match, .keep_all = TRUE)
   }
- 
+  
   # Add the duplicates as an attribute to the similar_pairs data frame
   attr(similar_pairs, "duplicates") <- duplicates
   
